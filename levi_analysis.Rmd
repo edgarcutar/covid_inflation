@@ -1,0 +1,49 @@
+---
+title: "R Notebook"
+output: 
+---
+
+```{r}
+pacman::p_load(tidyverse, lubridate, janitor, corrr)
+```
+
+```{r}
+covid <- read_csv("owid-covid-data.csv")
+cpi <- read_csv("DP_LIVE_23072022220107823.csv")
+```
+
+```{r}
+cpi2022q2 <- cpi %>% filter(TIME == "2022-Q2", SUBJECT == "TOT", MEASURE == "AGRWTH") %>% print()
+```
+
+```{r}
+stringency2020 <- covid %>% 
+  # filter(location == "Argentina") %>% 
+  select(iso_code:date, stringency_index) %>% 
+  filter(year(date) == 2020) %>% 
+  group_by(iso_code, location) %>% 
+  summarise(stringency_index = mean(stringency_index, na.rm = T)) %>% 
+  arrange(-stringency_index) %>% 
+  drop_na()
+  
+```
+```{r}
+total <- cpi2022q2 %>% 
+  select(iso_code = LOCATION, TIME, Value) %>% 
+  left_join(stringency2020) %>% 
+  select(iso_code, location, TIME, inflation = Value, stringency_index) %>% 
+  clean_names() %>% 
+  drop_na() %>% 
+  print()
+```
+
+```{r}
+cor(total$inflation, total$stringency_index)
+```
+
+```{r}
+total %>% 
+  ggplot(aes(stringency_index, inflation)) +
+  geom_point()
+```
+
